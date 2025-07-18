@@ -2,6 +2,7 @@ import pytest
 import generators
 import requests
 from urls import Url
+from data import OrderData, Flags
 
 @pytest.fixture()
 def create_and_login_courier():
@@ -40,3 +41,16 @@ def generate_courier_data():
     yield create_courier_body
     login_courier = requests.post(Url.LOGIN_COURIER, json=login_courier_body)
     requests.delete(f'{Url.DELETE_COURIER}{login_courier.json()["id"]}')
+
+@pytest.fixture
+def create_and_cleanup_order(request):
+    color = request.param
+    order_data = OrderData.order_data.copy()
+    order_data['color'] = color
+
+    response = requests.post(Url.CREATE_ORDER, json=order_data)
+    track = response.json()['track']
+
+    yield response
+
+    requests.put(f"{Url.ORDER_CANCEL}{track}")
